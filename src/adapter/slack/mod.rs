@@ -45,7 +45,7 @@ struct MyHandler {
 #[allow(unused_variables)]
 impl slack::MessageHandler for MyHandler {
     fn on_receive(&mut self, cli: &mut slack::RtmClient, raw: &str) {
-        println!("Received[{}]: {}", self.count, raw.to_string());
+        debug!("Received[{}]: {}", self.count, raw.to_string());
         self.count = self.count + 1;
 
         match string_to_slack_msg(raw) {

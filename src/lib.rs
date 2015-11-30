@@ -107,6 +107,8 @@ extern crate rustc_serialize;
 extern crate slack;
 extern crate irc;
 extern crate startuppong;
+#[macro_use]
+extern crate log;
 
 /// Shorthand for creating a `Regex` as suggested by the regex crate. You probably don't need to
 /// `macro_use` this unless you're creating handlers in an external module.
