@@ -1,11 +1,6 @@
-mod message;
-use self::message::*;
-
 use std::env;
 use std::sync::mpsc::{Sender, channel};
 use std::thread;
-
-use rustc_serialize::json::ToJson;
 
 use slack;
 use slack_api;
