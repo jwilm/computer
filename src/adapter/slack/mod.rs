@@ -8,6 +8,8 @@ use std::thread;
 use rustc_serialize::json::ToJson;
 
 use slack;
+use slack_api;
+use slack_api::chat::{post_message, PostMessageRequest};
 use regex::Regex;
 
 use adapter::ChatAdapter;
@@ -18,6 +20,7 @@ use message::IncomingMessage;
 /// configuration is added, the slack token should be placed in the environment variable
 /// `SLACK_BOT_TOKEN`
 pub struct SlackAdapter {
+    api_token: String,
     client: Option<slack::RtmClient>,
     addresser_regex: Regex
 }
@@ -28,6 +31,7 @@ impl SlackAdapter {
         let cli = slack::RtmClient::login(&token[..]).expect("login to slack");
 
         SlackAdapter {
+            api_token: token,
             client: Some(cli),
             addresser_regex: Regex::new(format!(r"^<@{}>", bot_name).as_str()).unwrap()
         }
@@ -82,7 +86,6 @@ impl ChatAdapter for SlackAdapter {
         let (tx_outgoing, rx_outgoing) = channel();
 
         let cli = self.client.take().unwrap();
-        let slack_tx = cli.sender().clone();
 
         thread::Builder::new().name("Chatbot Slack Receiver".to_owned()).spawn(move || {
             let mut handler = MyHandler {
@@ -93,16 +96,19 @@ impl ChatAdapter for SlackAdapter {
             cli.run(&mut handler).expect("run connector ok");
         }).ok().expect("failed to create thread for slack receiver");
 
+        let api_token = self.api_token.clone();
         thread::Builder::new().name("Chatbot Slack Sender".to_owned()).spawn(move || {
+            let webclient = slack_api::default_client().expect("initialize default slack http client");
             loop {
                 match rx_outgoing.recv() {
                     Ok(msg) => {
                         match msg {
                             AdapterMsg::Outgoing(m) => {
-                                let id = slack_tx.get_msg_uid() as i64;
-                                let out = OutgoingEvent::new(id, m);
-                                slack_tx.send(out.to_json().to_string().as_ref())
-                                        .expect("send message ok");
+                                let mut req = PostMessageRequest::default();
+                                req.channel = m.get_incoming().channel().unwrap();
+                                req.text = m.get_incoming().get_contents();
+                                post_message(&webclient, &api_token, &req)
+                                    .expect("slack_api chat post message");
                             }
                             // Not implemented for now
                             AdapterMsg::Private(_) => {
