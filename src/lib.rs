@@ -103,6 +103,8 @@ extern crate regex;
 extern crate rustc_serialize;
 #[cfg(feature = "slack-adapter")]
 extern crate slack;
+#[cfg(feature = "slack-adapter")]
+extern crate slack_api;
 #[cfg(feature = "irc-adapter")]
 extern crate irc;
 
